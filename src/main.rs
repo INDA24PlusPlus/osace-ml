@@ -10,14 +10,49 @@ fn main() {
 
     let mut nn = NeuralNetwork::new(28 * 28, 10, 2, 16);
 
+    // tests
+    for i in 0..1 {
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        println!("data: {}", data.t());
+
+        println!("Test label: {}", test_labels[[0, i]] as i32);
+        let output = nn.network(&data);
+        println!("Result: {}", output.t());
+    }
+
+    // training
     for i in 0..5000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
         let _output = nn.network_train(&data, &train_labels[[0, i]], 0.05);
     }
+
+    // print network
+    //for layer in &nn.layers {
+    //    println!("bias: {}", layer.bias.t());
+    //    println!("weights: {}", layer.weights);
+    //}
     
-    for i in 0..10 {
+    // tests
+    for i in 0..1 {
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        println!("data: {}", data.t());
+
+        println!("Test label: {}", test_labels[[0, i]] as i32);
+        let output = nn.network(&data);
+        println!("Result: {}", output.t());
+    }
+
+    for i in 5000..10000 {
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        //println!("data: {}", data.t());
+
+        let _output = nn.network_train(&data, &train_labels[[0, i]], 0.05);
+    }
+
+    // tests
+    for i in 0..2 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         println!("data: {}", data.t());
 
@@ -45,7 +80,8 @@ impl NeuralNetwork {
 
         // first layer (hidden)
         let random_weights: Vec<f32> = (0..(hidden_layers_size * inputs)).map(|_| random::<f32>()).collect();
-        let random_bias: Vec<f32> = (0..hidden_layers_size).map(|_| random::<f32>()).collect();
+        //let random_bias: Vec<f32> = (0..hidden_layers_size).map(|_| random::<f32>()).collect();
+        let random_bias: Vec<f32> = vec![0.0; hidden_layers_size];
         layers.push(Layer {
             weights: Array2::from_shape_vec((hidden_layers_size, inputs), random_weights).unwrap(),
             bias: Array2::from_shape_vec((hidden_layers_size, 1), random_bias).unwrap()
@@ -54,7 +90,8 @@ impl NeuralNetwork {
         // hidden layers
         for _ in 1..hidden_layers {
             let random_weights: Vec<f32> = (0..(hidden_layers_size * hidden_layers_size)).map(|_| random::<f32>()).collect();
-            let random_bias: Vec<f32> = (0..hidden_layers_size).map(|_| random::<f32>()).collect();
+            //let random_bias: Vec<f32> = (0..hidden_layers_size).map(|_| random::<f32>()).collect();
+            let random_bias: Vec<f32> = vec![0.0; hidden_layers_size];
             layers.push(Layer {
                 weights: Array2::from_shape_vec((hidden_layers_size, hidden_layers_size), random_weights).unwrap(),
                 bias: Array2::from_shape_vec((hidden_layers_size, 1), random_bias).unwrap()
@@ -63,7 +100,8 @@ impl NeuralNetwork {
 
         // output layer
         let random_weights: Vec<f32> = (0..(outputs * hidden_layers_size)).map(|_| random::<f32>()).collect();
-        let random_bias: Vec<f32> = (0..outputs).map(|_| random::<f32>()).collect();
+        //let random_bias: Vec<f32> = (0..outputs).map(|_| random::<f32>()).collect();
+        let random_bias: Vec<f32> = vec![0.0; outputs];
         layers.push(Layer {
             weights: Array2::from_shape_vec((outputs, hidden_layers_size), random_weights).unwrap(),
             bias: Array2::from_shape_vec((outputs, 1), random_bias).unwrap(),
@@ -125,8 +163,8 @@ impl NeuralNetwork {
             self.layers[i].weights = &self.layers[i].weights - &dcost_dweight * learning_rate;
             
             // save cost_derivative
-            //println!("bruh {i}");
             cost_derivative = self.layers[i].weights.t().dot(&delta);
+            //println!("bruh {i}");
             //println!("broo {i}");
             //println!("Shape cost_derivative: {:?}", cost_derivative.shape());
         }
