@@ -5,17 +5,25 @@ use rand::random;
 
 
 fn main() {
-    let (train_data, _, _, _) = load_data();
+    let (train_data, train_labels, test_data, test_labels) = load_data();
 
 
-    let nn = NeuralNetwork::new(28 * 28, 10, 2, 16);
+    let mut nn = NeuralNetwork::new(28 * 28, 10, 2, 16);
 
-    let first_image = train_data.slice(s![.., 0]).to_owned().into_shape((28 * 28, 1)).unwrap();
+    for i in 0..5000 {
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        //println!("data: {}", data.t());
 
-    let output = nn.network(&first_image);
-    print!("Output:");
-    for out in output {
-        print!(" {}", out);
+        let _output = nn.network_train(&data, &train_labels[[0, i]], 0.05);
+    }
+    
+    for i in 0..10 {
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        println!("data: {}", data.t());
+
+        println!("Test label: {}", test_labels[[0, i]] as i32);
+        let output = nn.network(&data);
+        println!("Result: {}", output.t());
     }
 }
 
@@ -68,17 +76,75 @@ impl NeuralNetwork {
         let mut output = input.clone();
         for layer in &self.layers {
             output = neuron_layer(&output, &layer.weights, &layer.bias);
+            output = sigmoid_layer(&output);
         }
+        output
+    }
+
+    fn network_train(&mut self, input: &Array2<f32>, label: &f32, learning_rate: f32) -> Array2<f32> {
+        let mut output = input.clone();
+
+        let mut outputs = Vec::new();
+        let mut activations = Vec::new();
+
+        // put the input in activations[0]
+        activations.push(input.clone());
+
+        // forward propagation
+        for layer in &self.layers {
+            output = neuron_layer(&output, &layer.weights, &layer.bias);
+            outputs.push(output.clone());
+
+            output = sigmoid_layer(&output);
+            activations.push(output.clone());
+        }
+        
+        // backward propagation
+        let _cost = cost(&output, label);
+        let mut cost_derivative = cost_derivative(&output, label);
+        for i in (0..self.layers.len()).rev() {
+            //println!("Shape activations: {:?}", activations[i].shape());
+            //println!("Shape cost_derivative: {:?}", cost_derivative.shape());
+            //println!("Shape weights: {:?}", self.layers[i].weights.shape());
+            //println!("Shape weights: {:?}", self.layers[i].weights.shape());
+            //println!("Shape weights: {:?}", self.layers[i].weights.shape());
+            //println!("Shape weights: {:?}", self.layers[i].weights.shape());
+            
+            // calculate how weights should be changed
+            let delta = sigmoid_derivative_layer(&outputs[i]) * &cost_derivative;
+            //println!("Shape delta: {:?}", delta.shape());
+            let dcost_dweight = delta.dot(&activations[i].t());
+            //let dcost_dweight = activations[i].dot(&delta.t());
+            //println!("Shape dcost_dweight: {:?}", dcost_dweight.shape());
+            
+            // change bias
+            self.layers[i].bias = &self.layers[i].bias - delta.sum_axis(ndarray::Axis(0)) * learning_rate;
+            //println!("Shape bias: {:?}", self.layers[i].bias.shape());
+            
+            // change weights
+            self.layers[i].weights = &self.layers[i].weights - &dcost_dweight * learning_rate;
+            
+            // save cost_derivative
+            //println!("bruh {i}");
+            cost_derivative = self.layers[i].weights.t().dot(&delta);
+            //println!("broo {i}");
+            //println!("Shape cost_derivative: {:?}", cost_derivative.shape());
+        }
+
         output
     }
 }
 
 fn neuron_layer(input: &Array2<f32>, weights: &Array2<f32>, bias: &Array2<f32>) -> Array2<f32> {
-    sigmoid_layer(&(weights.dot(input) + bias))
+    weights.dot(input) + bias
 }
 
 fn sigmoid_layer(input: &Array2<f32>) -> Array2<f32> {
     input.mapv(|x| sigmoid(x))
+}
+
+fn sigmoid_derivative_layer(input: &Array2<f32>) -> Array2<f32> {
+    input.mapv(|x| sigmoid_derivative(x))
 }
 
 fn sigmoid(x: f32) -> f32 {
@@ -88,6 +154,20 @@ fn sigmoid(x: f32) -> f32 {
 fn sigmoid_derivative(x: f32) -> f32 {
     let sig = sigmoid(x);
     sig * (1.0 - sig)
+}
+
+fn cost(input: &Array2<f32>, label: &f32) -> Array2<f32> {
+    let mut label_vec = Array2::zeros((10, 1));
+    label_vec[[*label as usize, 0]] = 1.0;
+
+    (input - label_vec).mapv(|x| x * x)
+}
+
+fn cost_derivative(input: &Array2<f32>, label: &f32) -> Array2<f32> {
+    let mut label_vec = Array2::zeros((10, 1));
+    label_vec[[*label as usize, 0]] = 1.0;
+
+    2.0 * (input - label_vec)
 }
 
 fn load_data() -> (Array2<f32>, Array2<f32>, Array2<f32>, Array2<f32>) {
