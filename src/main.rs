@@ -8,7 +8,7 @@ fn main() {
     let (train_data, train_labels, test_data, test_labels) = load_data();
 
 
-    let mut nn = NeuralNetwork::new(28 * 28, 10, 4, 32);
+    let mut nn = NeuralNetwork::new(28 * 28, 10, 2, 16);
 
     let output = nn.network(&Array2::from_shape_vec((28 * 28, 1), vec![0.0; 28 * 28]).unwrap());
     //println!("Result: {}", output.t());
@@ -30,8 +30,9 @@ fn main() {
     }
 
     // repeated training on one image
-    let data = train_data.slice(s![.., 0]).to_owned().insert_axis(ndarray::Axis(1));
-    let label = train_labels[[0, 0]];
+    let i = 1;
+    let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+    let label = train_labels[[0, i]];
     println!("Label: {}", label as usize);
     for _ in 0..0000 {
         //println!("data: {}", data.t());
@@ -44,7 +45,7 @@ fn main() {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
-        let _output = nn.network_train(&data, train_labels[[0, i]], 0.5);
+        let _output = nn.network_train(&data, train_labels[[0, i]], 0.01);
     }
 
     // print network
@@ -56,22 +57,22 @@ fn main() {
     // tests
     for i in 0..1 {
         let data = test_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
-        println!("data: {}", data.t());
+        //println!("data: {}", data.t());
 
         println!("Test label: {}", test_labels[[0, i]] as i32);
         let output = nn.network(&data);
         println!("Result: {}", output.t());
     }
 
-    for i in 5000..50000 {
+    for i in 5000..10000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
-        let _output = nn.network_train(&data, train_labels[[0, i]], 0.5);
+        let _output = nn.network_train(&data, train_labels[[0, i]], 0.01);
     }
 
     // tests
-    for i in 0..20 {
+    for i in 1..20 {
         let data = test_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
