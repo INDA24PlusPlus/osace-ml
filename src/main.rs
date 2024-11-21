@@ -41,7 +41,7 @@ fn main() {
     }
 
     // training only on some numbers
-    for i in 0..5000 {
+    for i in 0..0000 {
         let label = train_labels[[0, i]];
         if label >= 3.0 {
             continue;
@@ -54,7 +54,7 @@ fn main() {
     }
 
     // training
-    for i in 0..0000 {
+    for i in 0..5000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
@@ -77,7 +77,7 @@ fn main() {
         println!("Result: {}", output.t());
     }
 
-    for i in 5000..00000 {
+    for i in 5000..50000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
@@ -182,21 +182,21 @@ impl NeuralNetwork {
             //println!("Shape weights: {:?}", self.layers[i].weights.shape());
             
             // calculate how weights should be changed
-            let delta = sigmoid_derivative_layer(&outputs[i]) * &cost_derivative;
+            let delta = &cost_derivative * sigmoid_derivative_layer(&outputs[i]);
             //println!("Shape delta: {:?}", delta.shape());
-            let dcost_dweight = delta.dot(&activations[i].t());
+            let dcost_dweight = delta.dot(&activations[i].t()); // activations[i] is the input to this layer
             //let dcost_dweight = activations[i].dot(&delta.t());
             //println!("Shape dcost_dweight: {:?}", dcost_dweight.shape());
             
             // change bias
-            self.layers[i].bias = &self.layers[i].bias - delta.sum_axis(ndarray::Axis(0)) * learning_rate;
+            self.layers[i].bias = &self.layers[i].bias - &delta * learning_rate;
             //println!("Shape bias: {:?}", self.layers[i].bias.shape());
             
             // change weights
             self.layers[i].weights = &self.layers[i].weights - &dcost_dweight * learning_rate;
             
             // save cost_derivative
-            cost_derivative = self.layers[i].weights.t().dot(&delta);
+            cost_derivative = self.layers[i].weights.t().dot(&cost_derivative);
             //println!("bruh {i}");
             //println!("broo {i}");
             //println!("Shape cost_derivative: {:?}", cost_derivative.shape());
