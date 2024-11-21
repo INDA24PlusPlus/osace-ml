@@ -77,7 +77,7 @@ fn main() {
         println!("Result: {}", output.t());
     }
 
-    for i in 5000..50000 {
+    for i in 5000..00000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
