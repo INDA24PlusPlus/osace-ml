@@ -40,8 +40,21 @@ fn main() {
         let _output = nn.network_train(&data, label, 0.5);
     }
 
-    // training
+    // training only on some numbers
     for i in 0..5000 {
+        let label = train_labels[[0, i]];
+        if label >= 3.0 {
+            continue;
+        }
+
+        let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
+        //println!("data: {}", data.t());
+
+        let _output = nn.network_train(&data, label, 0.01);
+    }
+
+    // training
+    for i in 0..0000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
@@ -64,7 +77,7 @@ fn main() {
         println!("Result: {}", output.t());
     }
 
-    for i in 5000..10000 {
+    for i in 5000..00000 {
         let data = train_data.slice(s![.., i]).to_owned().insert_axis(ndarray::Axis(1));
         //println!("data: {}", data.t());
 
